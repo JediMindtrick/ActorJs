@@ -1,0 +1,42 @@
+{
+  "name": "ActorJs",
+  "description": "Javascript actor model providing supervision, hot-swap and location transparency",
+  "version": "0.1.0",
+  "keywords": [
+    "actors",
+    "event based actor model"
+  ],
+  "main": "./dist/index.js",
+  "maintainers": [
+    {
+      "name": "Brandon Wilhite",
+      "email": "brandonjwilhite@gmail.com",
+      "web": ""
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JediMindtrick/ActorJs"
+  },
+  "licenses": [
+    {
+      "name": "MIT",
+      "url": "https://github.com/JediMindtrick/ActorJs/blob/master/LICENSE"
+    }
+  ],
+  "devDependencies": {
+    "chai": "^2.2.0",
+    "mocha": "^2.2.4"
+  },
+  "scripts": {
+    "test-perf": "babel src --source-maps inline --out-dir dist && ./node_modules/.bin/mocha dist/test/perf --reporter spec",
+    "test": "eslint src/**/*.es6 && babel src --source-maps inline --out-dir dist && ./node_modules/.bin/mocha dist/test/unit --reporter spec",
+    "watch-perf": "nodemon --ignore 'dist/**/*' -e js --exec 'npm run test-perf'",
+    "dev": "nodemon --ignore 'dist/**/*' -e es6,js --exec 'npm test'"
+  },
+  "dependencies": {
+    "bluebird": "^2.9.24",
+    "data.either": "^1.2.0",
+    "ramda": "^0.13.0"
+  }
+}
