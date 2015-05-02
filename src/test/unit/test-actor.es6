@@ -1,7 +1,9 @@
 import r from 'ramda';
 import { expect, assert } from 'chai';
-import { Actor, SystemMsg, ChildMsg, UserMsg } from '../../lib/Actor';
+import { Actor } from '../../lib/Actor';
 import { StateMachine, State, Trigger, StateAlreadyExists } from '../../lib/StateMachine';
+import { SystemMsg, ChildMsg, UserMsg } from '../../lib/ActorChannel';
+import Promise from 'bluebird';
 
 var log = msg => console.log(msg);
 
@@ -64,7 +66,33 @@ describe('Actor',function(){
 
     });
 
-    class First {}
+/* The implementation does in fact do this, but I can't figure out a good way to test it without
+breaking the test run
+    it('throws any errors, if it has no parent',function(done){
+        let kb = new Actor();
+        let count = 0;
+
+        kb.addUserHandler(r.always(true), msg => {
+            throw new Error('intentional error');
+        });
+
+//this doesn't work, evidently ES6 classes don't allow for overriding instance methods?
+        kb._handleError = function(error,args){
+            expect(r.is(Error,error)).to.equal(true);
+            done();
+        }
+
+
+        kb.ask('foo');
+
+    });
+    */
+
+    class First {
+        constructor(){
+            this.type = 'first';
+        }
+    }
     class Second {}
 
     class Third {}
@@ -85,6 +113,7 @@ describe('Actor',function(){
             msg => {
                 count++;
                 expect(count).to.equal(1);
+                return count;
         });
 
         kb.addSystemHandler(
@@ -94,45 +123,52 @@ describe('Actor',function(){
             msg => {
                 count++;
                 expect(count).to.equal(2);
+                return count;
         });
 
         kb.addChildHandler(r.is(Third), msg => {
             count++;
             expect(count).to.equal(3);
+            return count;
         });
 
         kb.addChildHandler(r.is(Fourth), msg => {
             count++;
             expect(count).to.equal(4);
+            return count;
         });
 
         kb.addChildHandler(r.is(Fifth), msg => {
             count++;
             expect(count).to.equal(5);
+            return count;
         });
 
         kb.addUserHandler(r.is(Sixth), msg => {
             count++;
             expect(count).to.equal(6);
+            return count;
         });
 
         kb.addUserHandler(r.is(Seventh), msg => {
             count++;
             expect(count).to.equal(7);
             done();
+            return count;
         });
 
-        kb._systemMessages.enqueue([SystemMsg, {d: 'state machine'}, new First()]);
-        kb._systemMessages.enqueue([SystemMsg, {d: 'state machine'}, new Second()]);
+        kb._channel._systemMessages.enqueue([SystemMsg, Promise.defer(), {d: 'state machine'}, new First()]);
 
-        kb._childrenMessages.enqueue([ChildMsg, new Third()]);
-        kb._childrenMessages.enqueue([ChildMsg, new Fourth()]);
-        kb._childrenMessages.enqueue([ChildMsg, new Fifth()]);
+        kb._channel._systemMessages.enqueue([SystemMsg, Promise.defer(), {d: 'state machine'}, new Second()]);
 
-        kb._userMessages.enqueue([UserMsg, new Sixth()]);
-        kb._userMessages.enqueue([UserMsg, new Seventh()]);
+        kb._channel._childrenMessages.enqueue([ChildMsg, Promise.defer(), new Third()]);
+        kb._channel._childrenMessages.enqueue([ChildMsg, Promise.defer(), new Fourth()]);
+        kb._channel._childrenMessages.enqueue([ChildMsg, Promise.defer(), new Fifth()]);
 
-        kb._scheduler.start();
+        kb._channel._userMessages.enqueue([UserMsg, Promise.defer(), new Sixth()]);
+        kb._channel._userMessages.enqueue([UserMsg, Promise.defer(), new Seventh()]);
+
+        kb._channel._scheduler.start();
 
     });
 

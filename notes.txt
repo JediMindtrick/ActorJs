@@ -9,3 +9,26 @@
     "watch-perf": "nodemon --ignore 'dist/**/*' -e js --exec 'npm run test-perf'",
     "dev": "nodemon --ignore 'dist/**/*' -e js --exec 'npm test'"
   },
+
+
+
+var toReturn =
+    this._errorMessages.length > 0      ? this._errorMessages.dequeue() :
+    this._systemMessages.length > 0     ? this._systemMessages.dequeue() :
+    this._childrenMessages.length > 0   ? this._childrenMessages.dequeue() :
+    this._userMessages.length > 0       ? this._userMessages.dequeue() :
+    undefined;
+
+
+//defined by user-programmer
+userMessages -> normal program messages
+
+//defined by system/class definition
+systemMessages -> shut-down, restart, etc...
+
+//defined by supervision strategy
+childrenMessages -> delegated children errors, child messages like shutdown, restart, etc...
+
+//defined by ActorChannel, either throws or sends message to parent
+errorMessages -> we received an error during our normal operation...delegate it
+                    or handle it (most likely delegate it)

@@ -31,7 +31,8 @@ export function getMatchFirst(arr){
         var found = r.find(pair => pair[0](...args), arr);
         if(found !== undefined){
             try{
-                return Success((found[1](...args)));
+                let result = found[1](...args);
+                return r.is(Error, result) ? Failure(result) : Success(result);
             }catch(err){
                 return Failure(new InvocationError(args, err));
             }
@@ -49,7 +50,8 @@ export function getMatchAll(arr){
 
             return r.map(pair => {
                 try{
-                    return Success(pair[1](...args));
+                    let result = pair[1](...args);
+                    return r.is(Error, result) ? Failure(result) : Success(result);
                 }catch(err){
                     return Failure(new InvocationError(args, err));
                 }
