@@ -22,13 +22,10 @@ var toReturn =
 
 //defined by user-programmer
 userMessages -> normal program messages
-
 //defined by system/class definition
 systemMessages -> shut-down, restart, etc...
-
 //defined by supervision strategy
 childrenMessages -> delegated children errors, child messages like shutdown, restart, etc...
-
 //defined by ActorChannel, either throws or sends message to parent
 errorMessages -> we received an error during our normal operation...delegate it
                     or handle it (most likely delegate it)

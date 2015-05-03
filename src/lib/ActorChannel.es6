@@ -29,7 +29,6 @@ export class ActorChannel {
 
         this._actor = actor;
 
-        this._errorMessages = new Queue();
         this._systemMessages = new Queue();
         this._childrenMessages = new Queue();
         this._userMessages = new Queue();
@@ -41,7 +40,6 @@ export class ActorChannel {
             (...args) => {
 
                 var toReturn =
-                    this._errorMessages.length > 0      ? this._errorMessages.dequeue() :
                     this._systemMessages.length > 0     ? this._systemMessages.dequeue() :
                     this._childrenMessages.length > 0   ? this._childrenMessages.dequeue() :
                     this._userMessages.length > 0       ? this._userMessages.dequeue() :
@@ -65,15 +63,6 @@ export class ActorChannel {
 
     }
 
-    _handleError(actor, error, argsArray){
-        //do something based on supervision strategy
-        if(actor._parent === null || actor._parent === undefined){
-            throw error;
-        }else{
-            actor._parent.addChildMsg(actor, error, argsArray);
-        }
-    }
-
     _addHandler(pred, act, sym){
         this._messageHandler.add(
             (...args)=>{
@@ -95,21 +84,17 @@ export class ActorChannel {
             });
     }
 
-    addErrorHandler(pred, act){
-        this._addHandler(pred, act, ErrorMsg);
+    _handleError(actor, error, argsArray){
+        //do something based on supervision strategy
+        if(actor._parent === null || actor._parent === undefined){
+            throw error;
+        }else{
+            actor._parent.addChildMsg(actor, error, argsArray);
+        }
     }
 
-    addErrorMsg(...args){
-
-        let deferred = Promise.defer();
-
-        args.unshift(this._actor._stateMachine);
-        args.unshift(deferred);
-        args.unshift(ErrorMsg);
-        this._systemMessages.enqueue(args);
-
-        this._scheduler.start();
-        return deferred.promise;
+    addErrorHandler(pred, act){
+        this._addHandler(pred, act, ErrorMsg);
     }
 
     addSystemHandler(pred, act){
