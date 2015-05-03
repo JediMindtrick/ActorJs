@@ -22,22 +22,37 @@ SystemMsg -> shut-down, restart, etc...
 
 //defined by supervision strategy
 ChildMsg -> delegated children errors, child messages like shutdown, restart, etc...
-
-//defined by ActorChannel, either throws or sends message to parent
-//currently by-passing error channel
-ErrorMsg -> we received an error during our normal operation...delegate it
-                    or handle it (most likely delegate it)
 */
 
 //it has/is a state machine
 export class Actor {
-    constructor(parent = null){
+    constructor(opts = {}, parent = null){
         this._parent = parent;
         this._states = [];
         this._stateMachine = new StateMachine();
         this._channel = new ActorChannel(this);
         this._proxyChannel(['addErrorHandler', 'addErrorMsg', 'addSystemHandler', 'addSystemMsg',
         'addChildHandler', 'addChildMsg', 'addUserHandler', 'addUserMsg', 'ask']);
+
+        if(opts.receive !== undefined && r.is(Array, opts.receive)){
+            this._configUserHandlers(opts.receive);
+        }
+
+        if(opts.systemHandlers !== undefined && r.is(Array, opts.systemHandlers)){
+            this._configSystemHandlers(opts.systemHandlers);
+        }
+    }
+
+    _configSystemHandlers(handlers){
+        r.forEach(({test: pred, act: act}) => {
+            this.addSystemHandler(pred, act);
+        }, handlers);
+    }
+
+    _configUserHandlers(handlers){
+        r.forEach(({test: pred, act: act}) => {
+            this.addUserHandler(pred, act);
+        }, handlers);
     }
 
     _proxyChannel(methods){

@@ -38,6 +38,7 @@ export function getMatchFirst(arr){
             }
 
         }else{
+            console.log('no match found');
             return Failure(new NoMatch(...args, 'no match found'));
         }
     };

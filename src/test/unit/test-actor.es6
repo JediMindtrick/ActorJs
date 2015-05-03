@@ -51,11 +51,31 @@ describe('Actor',function(){
 
     it('returns a promise of results when a message is passed to it',function(done){
 
-        let kb = new Actor();
-        let count = 0;
+        const kb = new Actor();
 
         kb.addUserHandler(r.always(true), msg => {
             return 'bar';
+        });
+
+        kb.ask('foo')
+        .then(result => {
+            expect(result).to.equal('bar');
+            done();
+        });
+
+    });
+
+    it('can be passed a list of message handlers in the constructor',function(done){
+
+        const kb = new Actor({
+            receive:[
+                {
+                    test: r.always(true),
+                    act: msg => {
+                        return 'bar';
+                    }
+                }
+            ]
         });
 
         kb.ask('foo')
