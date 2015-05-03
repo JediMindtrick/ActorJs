@@ -10,6 +10,7 @@ import {ActorTerminated, ActorRestarted, PoisonPill as Poison} from '../../lib/S
 import r from 'ramda';
 
 describe('Supervision Strategies',function(){
+
     it('provides a resume strategy',function(done){
         done();
     });
@@ -26,7 +27,4 @@ describe('Supervision Strategies',function(){
         done();
     });
 
-    it('escalates entirely up the chain',function(done){
-        done();
-    });
 });

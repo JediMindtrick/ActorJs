@@ -8,53 +8,18 @@ import Promise from 'bluebird';
 var log = msg => console.log(msg);
 
 describe('Actor',function(){
-    
-    it('has a special channel for system messages',function(done){
-        let kb = new Actor();
-        let count = 0;
-
-        kb.addSystemHandler(r.always(true), (machine,_) => {
-            count++;
-            expect(count).to.equal(1);
-            done();
-        });
-        kb.addSystemMsg('foo');
-    });
-
-    it('has a special channel for children messages',function(done){
-        let kb = new Actor();
-        let count = 0;
-
-        kb.addChildHandler(r.always(true), msg => {
-            count++;
-            expect(msg).to.equal('foo');
-            expect(count).to.equal(1);
-            done();
-        });
-
-        kb.addChildMsg('foo');
-    });
-
-    it('has a special channel for user messages',function(done){
-        let kb = new Actor();
-        let count = 0;
-
-        kb.addUserHandler(r.always(true), msg => {
-            count++;
-            expect(msg).to.equal('foo');
-            expect(count).to.equal(1);
-            done();
-        });
-
-        kb.ask('foo');
-    });
 
     it('returns a promise of results when a message is passed to it',function(done){
 
-        const kb = new Actor();
-
-        kb.addUserHandler(r.always(true), msg => {
-            return 'bar';
+        const kb = new Actor({
+            receive: [
+                {
+                    test: r.always(true),
+                    act: msg => {
+                        return 'bar';
+                    }
+                }
+            ]
         });
 
         kb.ask('foo')
@@ -143,58 +108,76 @@ describe('Actor',function(){
     class Seventh {}
 
     it('is deterministic in the order of message processing',function(done){
-        let kb = new Actor();
+
         let count = 0;
-
-        kb.addSystemHandler(
-            (machine, msg) => {
-                return r.is(First, msg);
-            },
-            msg => {
-                count++;
-                expect(count).to.equal(1);
-                return count;
-        });
-
-        kb.addSystemHandler(
-            (machine, msg) => {
-                return r.is(Second, msg);
-            },
-            msg => {
-                count++;
-                expect(count).to.equal(2);
-                return count;
-        });
-
-        kb.addChildHandler(r.is(Third), msg => {
-            count++;
-            expect(count).to.equal(3);
-            return count;
-        });
-
-        kb.addChildHandler(r.is(Fourth), msg => {
-            count++;
-            expect(count).to.equal(4);
-            return count;
-        });
-
-        kb.addChildHandler(r.is(Fifth), msg => {
-            count++;
-            expect(count).to.equal(5);
-            return count;
-        });
-
-        kb.addUserHandler(r.is(Sixth), msg => {
-            count++;
-            expect(count).to.equal(6);
-            return count;
-        });
-
-        kb.addUserHandler(r.is(Seventh), msg => {
-            count++;
-            expect(count).to.equal(7);
-            done();
-            return count;
+        let kb = new Actor({
+            systemHandlers:[
+                {
+                    test: (machine, msg) => {
+                        return r.is(First, msg);
+                    },
+                    act: msg => {
+                        count++;
+                        expect(count).to.equal(1);
+                        return count;
+                    }
+                },
+                {
+                    test: (machine, msg) => {
+                        return r.is(Second, msg);
+                    },
+                    act: msg => {
+                        count++;
+                        expect(count).to.equal(2);
+                        return count;
+                    }
+                }
+            ],
+            childHandlers:[
+                {
+                    test: r.is(Third),
+                    act: msg => {
+                        count++;
+                        expect(count).to.equal(3);
+                        return count;
+                    }
+                },
+                {
+                    test: r.is(Fourth),
+                    act: msg => {
+                        count++;
+                        expect(count).to.equal(4);
+                        return count;
+                    }
+                },
+                {
+                    test: r.is(Fifth),
+                    act: msg => {
+                        count++;
+                        expect(count).to.equal(5);
+                        return count;
+                    }
+                }
+            ],
+            receive: [
+                {
+                    test: r.is(Sixth),
+                    act: msg => {
+                        count++;
+                        expect(count).to.equal(6);
+                        return count;
+                    }
+                },
+                {
+                    test: r.is(Seventh),
+                    act: msg => {
+                        count++;
+                        expect(count).to.equal(7);
+                        done();
+                        return count;
+                    }
+                }
+            ]
         });
 
         let putMsg = (queue,type,args)=>{

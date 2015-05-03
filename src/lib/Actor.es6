@@ -10,7 +10,12 @@ export const StateEnum = {
     New: Symbol('New'),
     Starting: Symbol('Starting'),
     Running: Symbol('Running'),
-    Stopped: Symbol('Stopped')
+    Stopped: Symbol('Stopped'),
+    Dead: Symbol('Dead')
+};
+
+export const SupervisionEnum = {
+    Stop: Symbol('Stop')
 };
 
 /*
@@ -37,8 +42,6 @@ export class Actor {
         this._children = [];
 
         this._channel = new ActorChannel(this);
-        this._proxyChannel(['addErrorHandler', 'addErrorMsg', 'addSystemHandler', 'addSystemMsg',
-        'addChildHandler', 'addChildMsg', 'addUserHandler', 'addUserMsg', 'ask']);
 
         if(opts.receive !== undefined && r.is(Array, opts.receive)){
             this._configUserHandlers(opts.receive);
@@ -48,60 +51,74 @@ export class Actor {
             this._configSystemHandlers(opts.systemHandlers);
         }
 
-        if(opts.childHandlers !== undefined && r.is(Array, opts.childHandlers)){
-            this._configChildHandlers(opts.childHandlers);
-        }
+        const _childHandlers = opts.childHandlers !== undefined && r.is(Array, opts.childHandlers) ? opts.childHandlers : [];
 
+        this._configSupervision(opts, _childHandlers);
+
+        this._configChildHandlers(_childHandlers);
     }
 
-    supervise(opts, _, name){
-        return new Actor(opts, this, name);
+//ask
+//addChildMsg
+//addSystemMsg
+
+    ask(...args){
+        return this._channel.ask(...args);
+    }
+
+    addChildMsg(...args){
+        return this._channel.addChildMsg(...args);
+    }
+
+    addSystemMsg(...args){
+        return this._channel.addSystemMsg(...args);
+    }
+
+    _configSupervision(opts, childHandlers){
+        if(opts.supervision === undefined || opts.supervision === null){
+            return;//default strategy is to do nothing, which delegates up the hierarchy
+        }else if(r.is(Array, opts.supervision)){
+            r.forEach(childHandlers.push, childHandlers);
+        }else if(opts.supervision === SupervisionEnum.Stop){
+            //actor._parent.addChildMsg(actor, error, argsArray);
+            childHandlers.push((actor, error, argsArray) => {
+
+            });
+        }
     }
 
     _configChildHandlers(handlers){
         r.forEach(({test: pred, act: act}) => {
-            this.addChildHandler(pred, act);
+            this._channel.addChildHandler(pred, act);
         }, handlers);
 
-        this.addChildHandler(
-            (_, error) =>{
+        this._channel.addChildHandler(
+            (_, error, args) =>{
                 return r.is(Error, error);
             },
 
-            (_, error) => {
+            (_, error, args) => {
                 return this._channel._handleError(this, error, []);
             }
         );
-
-        this.addChildHandler(
-            error =>{
-                return r.is(Error, error);
-            },
-
-            error => {
-                return this._channel._handleError(this, error, []);
-            }
-        );
-
     }
 
     _configSystemHandlers(handlers){
         r.forEach(({test: pred, act: act}) => {
-            this.addSystemHandler(pred, act);
+            this._channel.addSystemHandler(pred, act);
         }, handlers);
     }
 
     _configUserHandlers(handlers){
         r.forEach(({test: pred, act: act}) => {
-            this.addUserHandler(pred, act);
+            this._channel.addUserHandler(pred, act);
         }, handlers);
     }
 
-    _proxyChannel(methods){
-        r.forEach(m => {
-            this[m] = (...args)=>{
-                return this._channel[m](...args);
-            };
-        }, methods);
+    supervise(opts, _, name){
+        const child = new Actor(opts, this, name);
+        this._children.push(child);
+
+        return child;
     }
 }
