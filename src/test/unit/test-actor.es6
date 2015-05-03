@@ -65,7 +65,7 @@ describe('Actor',function(){
 
     });
 
-    it('can be passed a list of message handlers in the constructor',function(done){
+    it('can be passed a list of user handlers in the constructor',function(done){
 
         const kb = new Actor({
             receive:[
@@ -86,27 +86,47 @@ describe('Actor',function(){
 
     });
 
-/* The implementation does in fact do this, but I can't figure out a good way to test it without
-breaking the test run
-    it('throws any errors, if it has no parent',function(done){
-        let kb = new Actor();
-        let count = 0;
+    it('can be passed a list of system handlers in the constructor',function(done){
 
-        kb.addUserHandler(r.always(true), msg => {
-            throw new Error('intentional error');
+        const kb = new Actor({
+            systemHandlers:[
+                {
+                    test: r.always(true),
+                    act: msg => {
+                        return 'bar';
+                    }
+                }
+            ]
         });
 
-//this doesn't work, evidently ES6 classes don't allow for overriding instance methods?
-        kb._handleError = function(error,args){
-            expect(r.is(Error,error)).to.equal(true);
+        kb.addSystemMsg('foo')
+        .then(result => {
+            expect(result).to.equal('bar');
             done();
-        }
-
-
-        kb.ask('foo');
+        });
 
     });
-    */
+
+    it('can be passed a list of child handlers in the constructor',function(done){
+
+        const kb = new Actor({
+            childHandlers:[
+                {
+                    test: r.always(true),
+                    act: msg => {
+                        return 'bar';
+                    }
+                }
+            ]
+        });
+
+        kb.addChildMsg('foo')
+        .then(result => {
+            expect(result).to.equal('bar');
+            done();
+        });
+
+    });
 
     class First {
         constructor(){
@@ -191,5 +211,56 @@ breaking the test run
         kb._channel._scheduler.start();
 
     });
+
+    it('will delegate errors from child up to parent',function(done){
+
+        const kb = new Actor({
+            childHandlers:[
+                {
+                    test: r.always(true),
+                    act: msg => {
+                        done();
+                        return 'bar';
+                    }
+                }
+            ]
+        }, null, 'parent');
+
+        var child = kb.supervise({
+            receive: [
+                {
+                    test: r.always(true),
+                    act: msg => {
+                        throw new Error('foo');
+                    }
+                }
+            ]
+        }, null, 'child');
+
+        child.ask('fizz');
+
+    });
+
+    /* The implementation does in fact do this, but I can't figure out a good way to test it without
+    breaking the test run
+        it('throws any errors, if it has no parent',function(done){
+            let kb = new Actor();
+            let count = 0;
+
+            kb.addUserHandler(r.always(true), msg => {
+                throw new Error('intentional error');
+            });
+
+    //this doesn't work, evidently ES6 classes don't allow for overriding instance methods?
+            kb._handleError = function(error,args){
+                expect(r.is(Error,error)).to.equal(true);
+                done();
+            }
+
+
+            kb.ask('foo');
+
+        });
+        */
 
 });

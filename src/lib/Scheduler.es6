@@ -56,7 +56,8 @@ export class Scheduler {
     _tick(){
         if(this._state === Stopped) { return; }
 
-        this.next(_=>{
+        this.next(_ => {
+
             if(this._state === Stopped) { return; }
 
             this.processNext();

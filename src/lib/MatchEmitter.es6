@@ -32,13 +32,13 @@ export function getMatchFirst(arr){
         if(found !== undefined){
             try{
                 let result = found[1](...args);
-                return r.is(Error, result) ? Failure(result) : Success(result);
+                let toReturn = r.is(Error, result) ? Failure(result) : Success(result);
+                return toReturn;
             }catch(err){
                 return Failure(new InvocationError(args, err));
             }
 
         }else{
-            console.log('no match found');
             return Failure(new NoMatch(...args, 'no match found'));
         }
     };

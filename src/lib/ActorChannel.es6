@@ -8,6 +8,8 @@ import { Scheduler } from './Scheduler';
 import r from 'ramda';
 import Promise from 'bluebird';
 
+Promise.onPossiblyUnhandledRejection(function(error){ });
+
 export const SystemMsg = Symbol('SystemMsg');
 export const ChildMsg = Symbol('ChildMsg');
 export const UserMsg = Symbol('UserMsg');
@@ -52,39 +54,41 @@ export class ActorChannel {
 
                 //for some reason, if we just call someFunc(...args), then the args get wrapped into another array
                 //that has happened already here
-                this._messageHandler.matchFirst.apply(this._actor, args[0])
-                .orElse(error => {
-                    this._handleError(this._actor, error, args[0]);
-                });
+                let result = this._messageHandler.matchFirst.apply(this._actor, args[0]);
+                return result;
             },
 
-            this._handleError
+            _ => {}
         );
 
     }
 
     _addHandler(pred, act, sym){
+
+        let self = this;
+
         this._messageHandler.add(
             (...args)=>{
                 return r.eq(sym, r.head(args)) &&
-                    pred.apply(this, r.tail(r.tail(args)));
+                    pred.apply(self, r.tail(r.tail(args)));
             },
             (...args) => {
                 let deferred = r.head(r.tail(args));
 
                 try{
-                    let result = act.apply(this, r.tail(r.tail(args)));
+                    let result = act.apply(self, r.tail(r.tail(args)));
                     deferred.resolve(result);
                     return result;
                 }catch(err){
                     deferred.reject(err, r.tail(r.tail(args)));
-                    this._handleError(err, r.tail(r.tail(args)));
+                    self._handleError(self._actor, err, r.tail(r.tail(args)));
                     return err;
                 }
             });
     }
 
     _handleError(actor, error, argsArray){
+
         //do something based on supervision strategy
         if(actor._parent === null || actor._parent === undefined){
             throw error;
@@ -126,6 +130,7 @@ export class ActorChannel {
         this._childrenMessages.enqueue(args);
 
         this._scheduler.start();
+
         return deferred.promise;
     }
 

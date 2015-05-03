@@ -26,10 +26,16 @@ ChildMsg -> delegated children errors, child messages like shutdown, restart, et
 
 //it has/is a state machine
 export class Actor {
-    constructor(opts = {}, parent = null){
-        this._parent = parent;
+
+    constructor(opts = {}, parent = null, name = ''){
+
         this._states = [];
         this._stateMachine = new StateMachine();
+
+        this._name = name;
+        this._parent = parent;
+        this._children = [];
+
         this._channel = new ActorChannel(this);
         this._proxyChannel(['addErrorHandler', 'addErrorMsg', 'addSystemHandler', 'addSystemMsg',
         'addChildHandler', 'addChildMsg', 'addUserHandler', 'addUserMsg', 'ask']);
@@ -41,6 +47,42 @@ export class Actor {
         if(opts.systemHandlers !== undefined && r.is(Array, opts.systemHandlers)){
             this._configSystemHandlers(opts.systemHandlers);
         }
+
+        if(opts.childHandlers !== undefined && r.is(Array, opts.childHandlers)){
+            this._configChildHandlers(opts.childHandlers);
+        }
+
+    }
+
+    supervise(opts, _, name){
+        return new Actor(opts, this, name);
+    }
+
+    _configChildHandlers(handlers){
+        r.forEach(({test: pred, act: act}) => {
+            this.addChildHandler(pred, act);
+        }, handlers);
+
+        this.addChildHandler(
+            (_, error) =>{
+                return r.is(Error, error);
+            },
+
+            (_, error) => {
+                return this._channel._handleError(this, error, []);
+            }
+        );
+
+        this.addChildHandler(
+            error =>{
+                return r.is(Error, error);
+            },
+
+            error => {
+                return this._channel._handleError(this, error, []);
+            }
+        );
+
     }
 
     _configSystemHandlers(handlers){
