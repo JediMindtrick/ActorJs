@@ -39,7 +39,7 @@ export class ActorChannel {
 
         this._scheduler = new Scheduler(
 
-            (...args) => {
+            () => {
 
                 var toReturn =
                     this._systemMessages.length > 0     ? this._systemMessages.dequeue() :
@@ -50,13 +50,7 @@ export class ActorChannel {
                 return toReturn;
             },
 
-            (...args) => {
-
-                //for some reason, if we just call someFunc(...args), then the args get wrapped into another array
-                //that has happened already here
-                let result = this._messageHandler.matchFirst.apply(this._actor, args[0]);
-                return result;
-            },
+            this._messageHandler.matchFirst,
 
             _ => {}
         );
@@ -68,20 +62,20 @@ export class ActorChannel {
         let self = this;
 
         this._messageHandler.add(
-            (...args)=>{
-                return r.eq(sym, r.head(args)) &&
-                    pred.apply(self, r.tail(r.tail(args)));
+            ({msgType: type, deferred: deferred, args: args}) => {
+
+                return r.eq(sym, type) &&
+                    pred.apply(self, args);
             },
-            (...args) => {
-                let deferred = r.head(r.tail(args));
+            ({msgType: type, deferred: deferred, args: args}) => {
 
                 try{
-                    let result = act.apply(self, r.tail(r.tail(args)));
+                    let result = act.apply(self, args);
                     deferred.resolve(result);
                     return result;
                 }catch(err){
-                    deferred.reject(err, r.tail(r.tail(args)));
-                    self._handleError(self._actor, err, r.tail(r.tail(args)));
+                    deferred.reject(err, args);
+                    self._handleError(self._actor, err, args);
                     return err;
                 }
             });
@@ -110,9 +104,12 @@ export class ActorChannel {
         let deferred = Promise.defer();
 
         args.unshift(this._actor._stateMachine);
-        args.unshift(deferred);
-        args.unshift(SystemMsg);
-        this._systemMessages.enqueue(args);
+
+        this._systemMessages.enqueue({
+            msgType: SystemMsg,
+            deferred: deferred,
+            args: args
+        });
 
         this._scheduler.start();
         return deferred.promise;
@@ -125,9 +122,12 @@ export class ActorChannel {
     addChildMsg(...args){
 
         let deferred = Promise.defer();
-        args.unshift(deferred);
-        args.unshift(ChildMsg);
-        this._childrenMessages.enqueue(args);
+
+        this._childrenMessages.enqueue({
+            msgType: ChildMsg,
+            deferred: deferred,
+            args: args
+        });
 
         this._scheduler.start();
 
@@ -141,9 +141,12 @@ export class ActorChannel {
     addUserMsg(...args){
 
         let deferred = Promise.defer();
-        args.unshift(deferred);
-        args.unshift(UserMsg);
-        this._userMessages.enqueue(args);
+
+        this._userMessages.enqueue({
+            msgType: UserMsg,
+            deferred: deferred,
+            args: args
+        });
 
         this._scheduler.start();
         return deferred.promise;

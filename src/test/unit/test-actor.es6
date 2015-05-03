@@ -8,7 +8,7 @@ import Promise from 'bluebird';
 var log = msg => console.log(msg);
 
 describe('Actor',function(){
-
+    
     it('has a special channel for system messages',function(done){
         let kb = new Actor();
         let count = 0;
@@ -197,16 +197,23 @@ describe('Actor',function(){
             return count;
         });
 
-        kb._channel._systemMessages.enqueue([SystemMsg, Promise.defer(), {d: 'state machine'}, new First()]);
+        let putMsg = (queue,type,args)=>{
+            queue.enqueue({
+                msgType: type,
+                deferred: Promise.defer(),
+                args: args
+            });
+        }
 
-        kb._channel._systemMessages.enqueue([SystemMsg, Promise.defer(), {d: 'state machine'}, new Second()]);
+        putMsg(kb._channel._systemMessages, SystemMsg, [{d: 'state machine'}, new First()]);
+        putMsg(kb._channel._systemMessages, SystemMsg, [{d: 'state machine'}, new Second()]);
 
-        kb._channel._childrenMessages.enqueue([ChildMsg, Promise.defer(), new Third()]);
-        kb._channel._childrenMessages.enqueue([ChildMsg, Promise.defer(), new Fourth()]);
-        kb._channel._childrenMessages.enqueue([ChildMsg, Promise.defer(), new Fifth()]);
+        putMsg(kb._channel._childrenMessages, ChildMsg, [new Third()]);
+        putMsg(kb._channel._childrenMessages, ChildMsg, [new Fourth()]);
+        putMsg(kb._channel._childrenMessages, ChildMsg, [new Fifth()]);
 
-        kb._channel._userMessages.enqueue([UserMsg, Promise.defer(), new Sixth()]);
-        kb._channel._userMessages.enqueue([UserMsg, Promise.defer(), new Seventh()]);
+        putMsg(kb._channel._userMessages, UserMsg, [new Sixth()]);
+        putMsg(kb._channel._userMessages, UserMsg, [new Seventh()]);
 
         kb._channel._scheduler.start();
 
