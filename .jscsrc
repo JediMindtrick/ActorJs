@@ -1,0 +1,5 @@
+{
+    "preset": "grunt",
+    "requireCurlyBraces": null,
+    "excludeFiles": ["src/sandbox/*.es6"]
+}

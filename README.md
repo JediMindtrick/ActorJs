@@ -41,6 +41,8 @@ npm run dev
 
 Using [babel](https://babeljs.io/) & [eslint](http://eslint.org/docs/user-guide/configuring) for linting and transpiling.
 
+Using [jscs](http://jscs.info/overview.html) to help with styling.
+
 Resources
 ---------
 [Here's a good tutorial on using eslint](https://medium.com/@dan_abramov/lint-like-it-s-2015-6987d44c5b48)
