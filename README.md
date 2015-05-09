@@ -33,7 +33,7 @@ Build & Dev
 -----------
 ```
 npm install -g babel
-npm install jscs -g
+npm install -g jscs
 npm install -g eslint
 npm install -g babel-eslint
 npm install -g nodemon

@@ -58,17 +58,23 @@ export class ActorChannel {
 
     }
 
-    _addHandler(pred, act, sym) {
+    start() {
+      this._scheduler.start();
+    }
 
+    stop() {
+      this._scheduler.stop();
+    }
+
+    _createIfThen(pred, act, sym) {
       let self = this;
 
-      this._messageHandler.add(
-            ({msgType: type, deferred: deferred, args: args}) => {
-
+      return {
+            pred: ({msgType: type, deferred: deferred, args: args}) => {
               return r.eq(sym, type) &&
                   pred.apply(self, args);
             },
-            ({msgType: type, deferred: deferred, args: args}) => {
+            act: ({msgType: type, deferred: deferred, args: args}) => {
 
               try {
                 let result = act.apply(self, args);
@@ -79,7 +85,16 @@ export class ActorChannel {
                 self._handleError(self._actor, err, args);
                 return err;
               }
-            });
+            }};
+    }
+
+    _addHandler(pred, act, sym) {
+
+      let self = this;
+
+      let predAct = this._createIfThen(pred, act, sym);
+
+      this._messageHandler.add(predAct.pred, predAct.act);
     }
 
     _handleError(actor, error, argsArray) {
@@ -90,6 +105,15 @@ export class ActorChannel {
       }else {
         actor._parent.addChildMsg(actor, error, argsArray);
       }
+    }
+
+    prependChildHandler(pred, act) {
+
+      let self = this;
+
+      let predAct = this._createIfThen(pred, act, ChildMsg);
+
+      this._messageHandler.prepend(predAct.pred, predAct.act);
     }
 
     addErrorHandler(pred, act) {

@@ -225,7 +225,7 @@ describe('Actor',function(){
                     }
                 }
             ]
-        }, null, 'child');
+        }, 'child');
 
         child.ask('fizz');
 

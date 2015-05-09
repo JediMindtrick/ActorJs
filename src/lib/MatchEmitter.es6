@@ -25,6 +25,11 @@ export function getAddMatcher(arr) {
     arr.push([test, action]);
   };
 }
+export function getPrependMatcher(arr) {
+  return (test, action) => {
+    arr.unshift([test, action]);
+  };
+}
 export function getMatchFirst(arr) {
   return (...args) => {
 
@@ -68,6 +73,7 @@ export class MatchEmitter {
     constructor() {
       this.matchers = [];
       this.add = getAddMatcher(this.matchers);
+      this.prepend = getPrependMatcher(this.matchers);
       this.default = function(act) {
         this.add(_ => true, act);
       };

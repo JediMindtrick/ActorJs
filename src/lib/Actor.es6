@@ -29,13 +29,23 @@ SystemMsg -> shut-down, restart, etc...
 ChildMsg -> delegated children errors, child messages like shutdown, restart, etc...
 */
 
+/*
+1.  Emit dying message
+2.  Test send message to dead actor (should error)
+3.  Test make child error when supervision is set to SupervisionEnum.Stop
+4.? encapsulate state logic back into state machine
+*/
+
 //it has/is a state machine
 export class Actor {
 
     constructor(opts = {}, parent = null, name = '') {
 
-      this._states = [];
-      this._stateMachine = new StateMachine();
+      /*
+    this._states = [];
+    this._stateMachine = new StateMachine();
+    */
+      this._state = StateEnum.New;
 
       this._name = name;
       this._parent = parent;
@@ -54,16 +64,25 @@ export class Actor {
       const _childHandlers = opts.childHandlers !== undefined && r.is(Array, opts.childHandlers) ?
         opts.childHandlers : [];
 
-      this._configSupervision(opts, _childHandlers);
-
       this._configChildHandlers(_childHandlers);
+
+      this._state = StateEnum.Starting;
+      this._channel.start();
+      this._state = StateEnum.Running;
     }
 
-//ask
-//addChildMsg
-//addSystemMsg
+    die() {
+      //first we want to emit a dying message...
+      this._channel.stop();
+      this._state = StateEnum.Dead;
+    }
 
     ask(...args) {
+
+      if (this._state === StateEnum.Dead) {
+        throw new Error('Cannot accept message, this actor is dead!');
+      }
+
       return this._channel.ask(...args);
     }
 
@@ -73,20 +92,6 @@ export class Actor {
 
     addSystemMsg(...args) {
       return this._channel.addSystemMsg(...args);
-    }
-
-    _configSupervision(opts, childHandlers) {
-      if (opts.supervision === undefined || opts.supervision === null) {
-        return;//default strategy is to do nothing, which delegates up the hierarchy
-      }else if (r.is(Array, opts.supervision)) {
-        r.forEach(childHandlers.push, childHandlers);
-      }else if (opts.supervision === SupervisionEnum.Stop) {
-
-        //actor._parent.addChildMsg(actor, error, argsArray);
-        childHandlers.push((actor, error, argsArray) => {
-
-        });
-      }
     }
 
     _configChildHandlers(handlers) {
@@ -118,9 +123,33 @@ export class Actor {
       }, handlers);
     }
 
-    supervise(opts, _, name) {
+    supervise(opts, name, supervision) {
       const child = new Actor(opts, this, name);
       this._children.push(child);
+
+      if (supervision === SupervisionEnum.Stop) {
+
+        this._channel.prependChildHandler(
+            (actor, error, argsArray) => {
+              return actor === child;
+            },
+            (actor, error, argsArray) => {
+              //stop the child
+              //remove it from the parent's tree
+              child.die();
+              //do nothing with the mailbox, for now
+              let idx = r.findIndex(r.eq(child))(this._children);
+              this._children = r.remove(idx, 1)(this._children);
+            });
+
+      }else if (supervision === null || supervision === undefined) {
+        //this is ok, we will go with the default "panic" strategy
+        return child;
+
+      }else {
+        throw new Error('Passed a supervision style we cannot currently handle.  Allowed values' +
+        ' are SupervisionEnum.Stop and null or undefined.');
+      }
 
       return child;
     }
