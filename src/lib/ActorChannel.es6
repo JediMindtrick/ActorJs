@@ -8,6 +8,8 @@ import { Scheduler } from './Scheduler';
 import r from 'ramda';
 import Promise from 'bluebird';
 
+//b/c bluebird will spent a bunch of stuff out to console if we reject a promise
+//before it has a catch() handler attached
 Promise.onPossiblyUnhandledRejection(function(error) { });
 
 export const SystemMsg = Symbol('SystemMsg');
@@ -55,7 +57,6 @@ export class ActorChannel {
             _ => {}
 
         );
-
     }
 
     start() {
@@ -81,8 +82,8 @@ export class ActorChannel {
                 deferred.resolve(result);
                 return result;
               }catch (err) {
-                deferred.reject(err, args);
                 self._handleError(self._actor, err, args);
+                deferred.reject(err, args);
                 return err;
               }
             }};
@@ -103,6 +104,8 @@ export class ActorChannel {
       if (actor._parent === null || actor._parent === undefined) {
         throw error;
       }else {
+        //not entirely sure we shouldn't actually be hot-wiring in an immediate call to the error
+        //handler here, instead of putting it in the parent's message queue
         actor._parent.addChildMsg(actor, error, argsArray);
       }
     }

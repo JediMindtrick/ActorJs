@@ -1,8 +1,9 @@
 import r from 'ramda';
 import { expect, assert } from 'chai';
-import { Actor } from '../../lib/Actor';
+import { Actor, SupervisionEnum } from '../../lib/Actor';
 import { StateMachine, State, Trigger, StateAlreadyExists } from '../../lib/StateMachine';
 import { SystemMsg, ChildMsg, UserMsg } from '../../lib/ActorChannel';
+import { ActorTerminated } from '../../lib/SystemMessages';
 import Promise from 'bluebird';
 
 var log = msg => console.log(msg);
@@ -228,6 +229,63 @@ describe('Actor',function(){
         }, 'child');
 
         child.ask('fizz');
+
+    });
+
+    it('will throw an error if you try to send a message to a dead actor',function(done){
+
+        const kb = new Actor({
+            childHandlers:[
+                {
+                    test: r.always(true),
+                    act: msg => {
+                        done();
+                        return 'bar';
+                    }
+                }
+            ]
+        }, null, 'parent');
+
+        kb.die();
+
+        try{
+            kb.ask('fizz');
+        }catch(err){
+
+            expect(r.is(ActorTerminated,err)).to.equal(true);
+            expect(err.actor === kb).to.equal(true);
+            done();
+        }
+    });
+
+
+    it('will stop the child on error, if supervision is set to stop',function(done){
+
+        const kb = new Actor({ }, null, 'parent');
+
+        var child = kb.supervise({
+            receive: [
+                {
+                    test: r.always(true),
+                    act: msg => {
+                        throw new Error('foo');
+                    }
+                }
+            ]
+        }, 'child', SupervisionEnum.Stop);
+
+        child.ask('fizz')
+        .catch(function(err){
+
+            try{
+                //trying to talk to a dead actor
+                child.ask('buzz');
+            }catch(err2){
+                expect(r.is(ActorTerminated,err2)).to.equal(true);
+                expect(err2.actor === child).to.equal(true);
+                done();
+            }
+        })
 
     });
 

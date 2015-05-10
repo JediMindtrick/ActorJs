@@ -5,6 +5,7 @@ import { StateMachine, State, Trigger } from './StateMachine';
 import r from 'ramda';
 import Promise from 'bluebird';
 import { ActorChannel } from './ActorChannel';
+import { ActorTerminated } from './SystemMessages';
 
 export const StateEnum = {
   New: Symbol('New'),
@@ -18,6 +19,8 @@ export const SupervisionEnum = {
   Stop: Symbol('Stop')
 };
 
+let log = console.log;
+
 /*
 //defined by user-programmer
 UserMsg -> normal program messages
@@ -30,9 +33,7 @@ ChildMsg -> delegated children errors, child messages like shutdown, restart, et
 */
 
 /*
-1.  Emit dying message
-2.  Test send message to dead actor (should error)
-3.  Test make child error when supervision is set to SupervisionEnum.Stop
+1.  Emit dying message (requires making Actor an emitter)
 4.? encapsulate state logic back into state machine
 */
 
@@ -80,7 +81,7 @@ export class Actor {
     ask(...args) {
 
       if (this._state === StateEnum.Dead) {
-        throw new Error('Cannot accept message, this actor is dead!');
+        throw new ActorTerminated(this, 'Cannot accept message, this actor is dead!');
       }
 
       return this._channel.ask(...args);

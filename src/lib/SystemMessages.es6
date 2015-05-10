@@ -5,8 +5,9 @@ export class PoisonPill extends Error {
       super(message, fileName, lineNumber);
     }
 }
-export class ActorTerminated {
-    constructor(actor) {
+export class ActorTerminated extends Error {
+    constructor(actor, message = undefined, fileName = undefined, lineNumber = undefined) {
+      super(message, fileName, lineNumber);
       this.actor = actor;
     }
 }
