@@ -4,6 +4,7 @@ import r from 'ramda';
 import Either from 'data.either';
 let Failure = Either.Left;
 let Success = Either.Right;
+let log = console.log;
 
 export class NoMatch extends Error {
     constructor(args = [], message = undefined, fileName = undefined, lineNumber = undefined) {
@@ -20,16 +21,6 @@ export class InvocationError extends Error {
     }
 }
 
-export function getAddMatcher(arr) {
-  return (test, action) => {
-    arr.push([test, action]);
-  };
-}
-export function getPrependMatcher(arr) {
-  return (test, action) => {
-    arr.unshift([test, action]);
-  };
-}
 export function getMatchFirst(arr) {
   return (...args) => {
 
@@ -70,21 +61,21 @@ export function getMatchAll(arr) {
 }
 
 export class MatchEmitter {
+
     constructor() {
       this.matchers = [];
-      this.add = getAddMatcher(this.matchers);
-      this.prepend = getPrependMatcher(this.matchers);
       this.default = function(act) {
         this.add(_ => true, act);
       };
       this.matchFirst = getMatchFirst(this.matchers);
       this.matchAll = getMatchAll(this.matchers);
     }
-}
 
-export function mixinMatchEmitter({prototype: _proto}) {
-  var matchers = [];
-  _proto.add = getAddMatcher(matchers);
-  _proto.matchFirst = getMatchFirst(matchers);
-  _proto.matchAll = getMatchAll(matchers);
+    add (test, action) {
+      this.matchers.push([test, action]);
+    }
+
+    prepend (test, action) {
+      this.matchers.unshift([test, action]);
+    }
 }

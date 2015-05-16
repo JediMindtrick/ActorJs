@@ -15,7 +15,7 @@ describe('Actor',function(){
         const kb = new Actor({
             receive: [
                 {
-                    test: r.always(true),
+                    test: () => { console.log('inside predicate'); return true; },// r.always(true),
                     act: msg => {
                         return 'bar';
                     }

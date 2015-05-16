@@ -48,6 +48,7 @@ describe('MatchEmitter',function(){
         expect(matches).to.equal(2);
     });
 
+    /*
     it('provides a function to mixin MatchEmitter into any class',function(){
         mixer(TestMessage);
 
@@ -55,12 +56,13 @@ describe('MatchEmitter',function(){
         var matches = 0;
 
         emitter.add(msg => r.is(TestMessage,msg) && !r.isNil(msg.message),
-        ({message: msg}) => matches++/*log(msg)*/ );
+        ({message: msg}) => matches++ );
 
         emitter.matchFirst(new TestMessage('hi'));
 
         expect(matches).to.equal(1);
     });
+    */
 
     it('throws an InvocationError if an exception is thrown for first match',function(done){
 
